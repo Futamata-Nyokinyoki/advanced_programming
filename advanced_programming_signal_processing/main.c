@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-//#include <omp.h>
+// #include <omp.h>
 
 void templateMatchingGray(Image *src, Image *template, Point *position, double *distance)
 {
@@ -22,7 +22,7 @@ void templateMatchingGray(Image *src, Image *template, Point *position, double *
 		for (x = 0; x < src->width - template->width; x++)
 		{
 			int distance = 0;
-			//SSD
+			// SSD
 			for (j = 0; j < template->height; j++)
 			{
 				for (i = 0; i < template->width; i++)
@@ -53,16 +53,115 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 		return;
 	}
 
+	int *rowSums = (int *)malloc(sizeof(int) * src->height * 3); // RGBなので3倍
+	int *colSums = (int *)malloc(sizeof(int) * src->width * 3);	 // RGBなので3倍
+
+	int row, col;
+	// Initialize rowSums and colSums
+	for (row = 0; row < src->height * 3; row++)
+	{
+		rowSums[row] = 0;
+	}
+	for (col = 0; col < src->width * 3; col++)
+	{
+		colSums[col] = 0;
+	}
+
+	// Calculate sum of RGB values for each row and column
+	for (row = 0; row < src->height; row++)
+	{
+		for (col = 0; col < src->width; col++)
+		{
+			int index = 3 * (row * src->width + col);
+			rowSums[3 * row + 0] += src->data[index + 0];
+			rowSums[3 * row + 1] += src->data[index + 1];
+			rowSums[3 * row + 2] += src->data[index + 2];
+
+			colSums[3 * col + 0] += src->data[index + 0];
+			colSums[3 * col + 1] += src->data[index + 1];
+			colSums[3 * col + 2] += src->data[index + 2];
+		}
+	}
+
+	int *rowDiff = (int *)malloc(sizeof(int) * (src->height - 1));
+	int *colDiff = (int *)malloc(sizeof(int) * (src->width - 1));
+	int maxDiffX1 = INT_MIN, maxDiffX2 = INT_MIN, maxDiffY1 = INT_MIN, maxDiffY2 = INT_MIN;
+	int x1 = -1, x2 = -1, y1 = -1, y2 = -1;
+	int skipRange = 16;
+
+	// Calculate difference of RGB sums for each row and column
+	for (row = 0; row < src->height - 1; row++)
+	{
+		rowDiff[row] = 0;
+		for (int rgb = 0; rgb < 3; rgb++)
+		{
+			int diff = rowSums[3 * (row + 1) + rgb] - rowSums[3 * row + rgb] >> 5;
+			rowDiff[row] += diff * diff;
+		}
+		if (row < skipRange || row > src->height - skipRange)
+		{
+			continue;
+		}
+
+		if (rowDiff[row] > maxDiffY1)
+		{
+			maxDiffY2 = maxDiffY1;
+			y2 = y1;
+			maxDiffY1 = rowDiff[row];
+			y1 = row;
+		}
+		else if (rowDiff[row] > maxDiffY2)
+		{
+			maxDiffY2 = rowDiff[row];
+			y2 = row;
+		}
+	}
+
+	for (col = 0; col < src->width - 1; col++)
+	{
+		colDiff[col] = 0;
+		for (int rgb = 0; rgb < 3; rgb++)
+		{
+			int diff = colSums[3 * (col + 1) + rgb] - colSums[3 * col + rgb] >> 5;
+			colDiff[col] += diff * diff;
+		}
+		if (col < skipRange || col > src->width - skipRange)
+		{
+			continue;
+		}
+
+		if (colDiff[col] > maxDiffX1)
+		{
+			maxDiffX2 = maxDiffX1;
+			x2 = x1;
+			maxDiffX1 = colDiff[col];
+			x1 = col;
+		}
+		else if (colDiff[col] > maxDiffX2)
+		{
+			maxDiffX2 = colDiff[col];
+			x2 = col;
+		}
+	}
+	printf("maxDiffX1: %d, maxDiffX2: %d, maxDiffY1: %d, maxDiffY2: %d\n", maxDiffX1, maxDiffX2, maxDiffY1, maxDiffY2);
+	printf("x1: %d, x2: %d, y1: %d, y2: %d\n", x1, x2, y1, y2);
+
+	int x_hat = x1 < x2 ? x1 : x2;
+	int y_hat = y1 < y2 ? y1 : y2;
+
+	printf("x_hat: %d, y_hat: %d\n", x_hat, y_hat);
+
 	int min_distance = INT_MAX;
 	int ret_x = 0;
 	int ret_y = 0;
 	int x, y, i, j;
-	for (y = 0; y < (src->height - template->height); y++)
+
+	for (y = y_hat - 2; y < y_hat + 2; y++)
 	{
-		for (x = 0; x < src->width - template->width; x++)
+		for (x = x_hat - 2; x < x_hat + 2; x++)
 		{
 			int distance = 0;
-			//SSD
+			// SSD
 			for (j = 0; j < template->height; j++)
 			{
 				for (i = 0; i < template->width; i++)
@@ -88,6 +187,11 @@ void templateMatchingColor(Image *src, Image *template, Point *position, double 
 	position->x = ret_x;
 	position->y = ret_y;
 	*distance = sqrt(min_distance) / (template->width * template->height);
+
+	free(rowSums);
+	free(colSums);
+	free(rowDiff);
+	free(colDiff);
 }
 
 // test/beach3.ppm template /airgun_women_syufu.ppm 0 0.5 cwp
