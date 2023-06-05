@@ -92,22 +92,24 @@ void templateMatchingColor(Image *src, Image *templ, Point *position, double *di
                 }
                 else if (size == 5)
                 {
+                    templateMatchingColorLevel5(src, templ, position, distance, (double)size / 10);
                 }
                 else
+                    templateMatchingColorLevel5(src, templ, position, distance, (double)size / 10);
                 {
                 }
             }
             else if (contrast == 5)
             {
-                templateMatchingColorLevel5(src, templ, position, distance, (double)size / 10);
+                templateMatchingColorLevel3(src, templ, position, distance, (double)contrast / 10);
             }
             else if (contrast == 15)
             {
-                templateMatchingColorLevel5(src, templ, position, distance, (double)size / 10);
+                templateMatchingColorLevel3(src, templ, position, distance, (double)contrast / 10);
             }
             else
             {
-                templateMatchingColorLevel5(src, templ, position, distance, (double)size / 10);
+                templateMatchingColorLevel3(src, templ, position, distance, (double)contrast / 10);
             }
         }
         else
@@ -118,6 +120,72 @@ void templateMatchingColor(Image *src, Image *templ, Point *position, double *di
 
     *distance = INT_MAX;
     return;
+}
+
+void templateMatchingColorLevel3(Image *src, Image *templ, Point *position, double *distance, double alpha)
+{
+    if (src->channel != 3 || templ->channel != 3)
+    {
+        fprintf(stderr, "src and/or template image is not a color image.\n");
+        return;
+    }
+
+    for (int y = 0; y < src->height - templ->height; y++)
+    {
+        for (int x = 0; x < src->width - templ->width; x++)
+        {
+            if (isMatchColorLevel3(src, templ, x, y, alpha))
+            {
+                position->x = x;
+                position->y = y;
+                *distance = 0;
+                return;
+            }
+        }
+    }
+
+    position->x = 0;
+    position->y = 0;
+    *distance = INT_MAX;
+    return;
+}
+
+int isMatchColorLevel3(Image *src, Image *templ, int x, int y, double alpha)
+{
+    for (int j = 0; j < templ->height; j++)
+    {
+        for (int i = 0; i < templ->width; i++)
+        {
+            int pt = 3 * ((y + j) * src->width + (x + i));
+            int pt2 = 3 * (j * templ->width + i);
+
+            int src_r = src->data[pt + 0];
+            int src_g = src->data[pt + 1];
+            int src_b = src->data[pt + 2];
+
+            Pixel templ_px;
+            templ_px.r = templ->data[pt2 + 0];
+            templ_px.g = templ->data[pt2 + 1];
+            templ_px.b = templ->data[pt2 + 2];
+
+            changeAlphaLevel3(&templ_px, alpha);
+
+            if (abs(src_r - templ_px.r) > 1 ||
+                abs(src_g - templ_px.g) > 1 ||
+                abs(src_b - templ_px.b) > 1)
+            {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+void changeAlphaLevel3(Pixel *p, double alpha)
+{
+    p->r = (min((int)(p->r * alpha), 255));
+    p->g = (min((int)(p->g * alpha), 255));
+    p->b = (min((int)(p->b * alpha), 255));
 }
 
 void templateMatchingColorLevel4(Image *src, Image *templ, Point *position, double *distance)
