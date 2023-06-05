@@ -57,72 +57,34 @@ void templateMatchingColor(Image *src, Image *templ, Point *position, double *di
         fprintf(stderr, "src and/or template image is not a color image.\n");
         return;
     }
-
-    // 探索の条件の設定
-    // 1. 背景の有無
-    // 2. コントラスト * 10
-    // 3. 画像の回転
-    // 4. 画像のサイズ * 10
-    int settings[10][4] = {
-        {1, 10, 0, 10},
-        {1, 10, 0, 5},
-        {1, 10, 0, 20},
-        {1, 10, 90, 10},
-        {1, 10, 180, 10},
-        {1, 10, 270, 10},
-        {1, 5, 0, 10},
-        {1, 15, 0, 10},
-        {1, 20, 0, 10},
-        {0, 10, 0, 10},
-    };
-
-    for (int i = 0; i < 10; i++)
+    else if (templateMatchingColorLevel2(src, templ, position, distance))
     {
-        int background = settings[i][0];
-        int contrast = settings[i][1];
-        int rotation = settings[i][2];
-        int size = settings[i][3];
-
-        if (background == 1)
-        {
-            if (contrast == 10)
-            {
-                if (size == 10)
-                {
-                }
-                else if (size == 5)
-                {
-                    templateMatchingColorLevel5(src, templ, position, distance, (double)size / 10);
-                }
-                else
-                    templateMatchingColorLevel5(src, templ, position, distance, (double)size / 10);
-                {
-                }
-            }
-            else if (contrast == 5)
-            {
-                templateMatchingColorLevel3(src, templ, position, distance, (double)contrast / 10);
-            }
-            else if (contrast == 15)
-            {
-                templateMatchingColorLevel3(src, templ, position, distance, (double)contrast / 10);
-            }
-            else
-            {
-                templateMatchingColorLevel3(src, templ, position, distance, (double)contrast / 10);
-            }
-        }
-        else
-        {
-            templateMatchingColorLevel4(src, templ, position, distance);
-        }
+        printf("level2\n");
+        return;
     }
-
-    *distance = INT_MAX;
-    return;
+    else if (templateMatchingColorLevel5(src, templ, position, distance))
+    {
+        printf("level5\n");
+        return;
+    }
+    else if (templateMatchingColorLevel6(src, templ, position, distance, rotation))
+    {
+        printf("level6\n");
+        return;
+    }
+    else if (templateMatchingColorLevel3(src, templ, position, distance))
+    {
+        printf("level3\n");
+        return;
+    }
+    else if (templateMatchingColorLevel4(src, templ, position, distance))
+    {
+        printf("level4\n");
+        return;
+    }
 }
 
-void templateMatchingColorLevel3(Image *src, Image *templ, Point *position, double *distance, double alpha)
+int templateMatchingColorLevel2(Image *src, Image *templ, Point *position, double *distance)
 {
     if (src->channel != 3 || templ->channel != 3)
     {
@@ -134,12 +96,12 @@ void templateMatchingColorLevel3(Image *src, Image *templ, Point *position, doub
     {
         for (int x = 0; x < src->width - templ->width; x++)
         {
-            if (isMatchColorLevel3(src, templ, x, y, alpha))
+            if (isMatchColorLevel2(src, templ, x, y))
             {
                 position->x = x;
                 position->y = y;
                 *distance = 0;
-                return;
+                return 1;
             }
         }
     }
@@ -147,7 +109,69 @@ void templateMatchingColorLevel3(Image *src, Image *templ, Point *position, doub
     position->x = 0;
     position->y = 0;
     *distance = INT_MAX;
-    return;
+    return 0;
+}
+
+int isMatchColorLevel2(Image *src, Image *templ, int x, int y)
+{
+    for (int j = 0; j < templ->height; j++)
+    {
+        for (int i = 0; i < templ->width; i++)
+        {
+            int pt = 3 * ((y + j) * src->width + (x + i));
+            int pt2 = 3 * (j * templ->width + i);
+
+            if (src->data[pt + 0] == 0 && src->data[pt + 1] == 0 && src->data[pt + 2] == 0)
+            {
+                continue;
+            }
+            else if (src->data[pt + 0] == 255 && src->data[pt + 1] == 255 && src->data[pt + 2] == 255)
+            {
+                continue;
+            }
+
+            if (src->data[pt + 0] != templ->data[pt2 + 0] ||
+                src->data[pt + 1] != templ->data[pt2 + 1] ||
+                src->data[pt + 2] != templ->data[pt2 + 2])
+            {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+int templateMatchingColorLevel3(Image *src, Image *templ, Point *position, double *distance)
+{
+    if (src->channel != 3 || templ->channel != 3)
+    {
+        fprintf(stderr, "src and/or template image is not a color image.\n");
+        return;
+    }
+
+    int min_distance = INT_MAX;
+    double alpha[] = {0.5, 1.5, 2.0};
+    for (int i = 0; i < 3; i++)
+    {
+        for (int y = 0; y < src->height - templ->height; y++)
+        {
+            for (int x = 0; x < src->width - templ->width; x++)
+            {
+                if (isMatchColorLevel3(src, templ, x, y, alpha[i]))
+                {
+                    position->x = x;
+                    position->y = y;
+                    *distance = 0;
+                    return 1;
+                }
+            }
+        }
+    }
+
+    position->x = 0;
+    position->y = 0;
+    *distance = INT_MAX;
+    return 0;
 }
 
 int isMatchColorLevel3(Image *src, Image *templ, int x, int y, double alpha)
@@ -170,9 +194,9 @@ int isMatchColorLevel3(Image *src, Image *templ, int x, int y, double alpha)
 
             changeAlphaLevel3(&templ_px, alpha);
 
-            if (abs(src_r - templ_px.r) > 1 ||
-                abs(src_g - templ_px.g) > 1 ||
-                abs(src_b - templ_px.b) > 1)
+            if (src_r != templ_px.r ||
+                src_g != templ_px.g ||
+                src_b != templ_px.b)
             {
                 return 0;
             }
@@ -183,12 +207,17 @@ int isMatchColorLevel3(Image *src, Image *templ, int x, int y, double alpha)
 
 void changeAlphaLevel3(Pixel *p, double alpha)
 {
-    p->r = (min((int)(p->r * alpha), 255));
-    p->g = (min((int)(p->g * alpha), 255));
-    p->b = (min((int)(p->b * alpha), 255));
+    p->r = (minLevel3((int)(p->r * alpha), 255));
+    p->g = (minLevel3((int)(p->g * alpha), 255));
+    p->b = (minLevel3((int)(p->b * alpha), 255));
 }
 
-void templateMatchingColorLevel4(Image *src, Image *templ, Point *position, double *distance)
+int minLevel3(int a, int b)
+{
+    return (a < b) ? a : b;
+}
+
+int templateMatchingColorLevel4(Image *src, Image *templ, Point *position, double *distance)
 {
     if (src->channel != 3 || templ->channel != 3)
     {
@@ -213,7 +242,7 @@ void templateMatchingColorLevel4(Image *src, Image *templ, Point *position, doub
     }
 
     *distance = sqrt(min_distance) / (templ->width * templ->height);
-    return;
+    return 1;
 }
 
 int calculateSSDColorLevel4(Image *src, Image *templ, int x, int y)
@@ -235,7 +264,9 @@ int calculateSSDColorLevel4(Image *src, Image *templ, int x, int y)
             int templ_g = templ->data[pt2 + 1];
             int templ_b = templ->data[pt2 + 2];
 
-            if (templ_r == 0 && templ_g == 0 && templ_b == 0)
+            if (templ_r == 0 &&
+                templ_g == 0 &&
+                templ_b == 0)
             {
                 continue;
             }
@@ -256,7 +287,7 @@ int calculateSSDColorLevel4(Image *src, Image *templ, int x, int y)
     return distance;
 }
 
-void templateMatchingColorLevel5(Image *src, Image *templ, Point *position, double *distance, double size)
+int templateMatchingColorLevel5(Image *src, Image *templ, Point *position, double *distance)
 {
     if (src->channel != 3 || templ->channel != 3)
     {
@@ -264,18 +295,23 @@ void templateMatchingColorLevel5(Image *src, Image *templ, Point *position, doub
         return;
     }
 
-    for (int y = 0; y < src->height - templ->height * size; y++)
+    int min_distance = INT_MAX;
+    double size[] = {0.5, 2.0};
+    for (int i = 0; i < 2; i++)
     {
-        for (int x = 0; x < src->width - templ->width * size; x++)
+        for (int y = 0; y < src->height - templ->height * size[i]; y++)
         {
-            if (isMatchColorLevel5(src, templ, x, y, size))
+            for (int x = 0; x < src->width - templ->width * size[i]; x++)
             {
-                position->x = x;
-                position->y = y;
-                templ->width = ceil(templ->width * size);
-                templ->height = ceil(templ->height * size);
-                *distance = 0;
-                return;
+                if (isMatchColorLevel5(src, templ, x, y, size[i]))
+                {
+                    position->x = x;
+                    position->y = y;
+                    templ->width = ceil(templ->width * size[i]);
+                    templ->height = ceil(templ->height * size[i]);
+                    *distance = 0;
+                    return 1;
+                }
             }
         }
     }
@@ -283,7 +319,7 @@ void templateMatchingColorLevel5(Image *src, Image *templ, Point *position, doub
     position->x = 0;
     position->y = 0;
     *distance = INT_MAX;
-    return;
+    return 0;
 }
 
 Pixel getAveLevel5(Image *img, int x, int y, int size)
@@ -333,33 +369,7 @@ int isMatchColorLevel5(Image *src, Image *templ, int x, int y, double size)
             }
         }
     }
-    else if (size == 1.0)
-    {
-        for (int j = 0; j < templ->height; j++)
-        {
-            for (int i = 0; i < templ->width; i++)
-            {
-                int pt = 3 * ((y + j) * src->width + (x + i));
-                int pt2 = 3 * (j * templ->width + i);
-
-                int src_r = src->data[pt + 0];
-                int src_g = src->data[pt + 1];
-                int src_b = src->data[pt + 2];
-                int templ_r = templ->data[pt2 + 0];
-                int templ_g = templ->data[pt2 + 1];
-                int templ_b = templ->data[pt2 + 2];
-
-                int THRESHOLD = 1;
-                if (abs(src_r - templ_r) > THRESHOLD ||
-                    abs(src_g - templ_g) > THRESHOLD ||
-                    abs(src_b - templ_b) > THRESHOLD)
-                {
-                    return 0;
-                }
-            }
-        }
-    }
-    else if (size == 2.0)
+    else
     {
         for (int j = 0; j < templ->height; j++)
         {
@@ -386,7 +396,42 @@ int isMatchColorLevel5(Image *src, Image *templ, int x, int y, double size)
     return 1;
 }
 
-int isMatchColor(Image *src, Image *templ, int x, int y)
+int templateMatchingColorLevel6(Image *src, Image *templ, Point *position, double *distance, int *rotation)
+{
+    if (src->channel != 3 || templ->channel != 3)
+    {
+        fprintf(stderr, "src and/or template image is not a color image.\n");
+        return;
+    }
+
+    Image *rotated;
+    int rotations[] = {90, 180, 270};
+    for (int i = 0; i < 3; i++)
+    {
+        rotated = rotateImage(templ, rotations[i]);
+        for (int y = 0; y < src->height - rotated->height; y++)
+        {
+            for (int x = 0; x < src->width - rotated->width; x++)
+            {
+                if (isMatchColorLevel6(src, rotated, x, y))
+                {
+                    position->x = x;
+                    position->y = y;
+                    templ->height = rotated->height;
+                    templ->width = rotated->width;
+                    *rotation = rotations[i];
+                    *distance = 0;
+                    return 1;
+                }
+            }
+        }
+    }
+
+    *distance = INT_MAX;
+    return 0;
+}
+
+int isMatchColorLevel6(Image *src, Image *templ, int x, int y)
 {
     for (int j = 0; j < templ->height; j++)
     {
