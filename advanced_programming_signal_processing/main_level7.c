@@ -114,9 +114,9 @@ int templateMatchingColorLevel2(Image *src, Image *templ, Point *position, doubl
 int isMatchColorLevel2(Image *src, Image *templ, int x, int y)
 {
     int color_flag = 0;
-    for (int j = 0; j < templ->height; j++)
+    for (int j = 0; j < templ->height; j += 4)
     {
-        for (int i = 0; i < templ->width; i++)
+        for (int i = 0; i < templ->width; i += 4)
         {
             int pt = 3 * ((y + j) * src->width + (x + i));
             int pt2 = 3 * (j * templ->width + i);
@@ -185,9 +185,9 @@ int templateMatchingColorLevel3(Image *src, Image *templ, Point *position, doubl
 
 int isMatchColorLevel3(Image *src, Image *templ, int x, int y, double alpha)
 {
-    for (int j = 0; j < templ->height; j++)
+    for (int j = 0; j < templ->height; j += 4)
     {
-        for (int i = 0; i < templ->width; i++)
+        for (int i = 0; i < templ->width; i += 4)
         {
             int pt = 3 * ((y + j) * src->width + (x + i));
             int pt2 = 3 * (j * templ->width + i);
@@ -260,9 +260,9 @@ int calculateSSDColorLevel4(Image *src, Image *templ, int x, int y)
     int distance = 0;
     int THRESHOLD = templ->width * templ->height * 180;
 
-    for (int j = 0; j < templ->height; j++)
+    for (int j = 0; j < templ->height; j += 4)
     {
-        for (int i = 0; i < templ->width; i++)
+        for (int i = 0; i < templ->width; i += 4)
         {
             int pt = 3 * ((y + j) * src->width + (x + i));
             int pt2 = 3 * (j * templ->width + i);
@@ -353,7 +353,7 @@ int isMatchColorLevel5(Image *src, Image *templ, int x, int y, double size)
 {
     if (size == 0.5)
     {
-        for (int j = 0; j < templ->height / 2; j++)
+        for (int j = 0; j < templ->height / 2; j += 2)
         {
             for (int i = 0; i < templ->width / 2; i++)
             {
@@ -379,7 +379,7 @@ int isMatchColorLevel5(Image *src, Image *templ, int x, int y, double size)
     {
         for (int j = 0; j < templ->height; j++)
         {
-            for (int i = 0; i < templ->width; i++)
+            for (int i = 0; i < templ->width; i += 2)
             {
                 int pt2 = 3 * (j * templ->width + i);
 
@@ -439,9 +439,9 @@ int templateMatchingColorLevel6(Image *src, Image *templ, Point *position, doubl
 
 int isMatchColorLevel6(Image *src, Image *templ, int x, int y)
 {
-    for (int j = 0; j < templ->height; j++)
+    for (int j = 0; j < templ->height; j += 4)
     {
-        for (int i = 0; i < templ->width; i++)
+        for (int i = 0; i < templ->width; i += 4)
         {
             int pt = 3 * ((y + j) * src->width + (x + i));
             int pt2 = 3 * (j * templ->width + i);
