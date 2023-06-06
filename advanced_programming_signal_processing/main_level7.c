@@ -114,9 +114,9 @@ int templateMatchingColorLevel2(Image *src, Image *templ, Point *position, doubl
 int isMatchColorLevel2(Image *src, Image *templ, int x, int y)
 {
     int color_flag = 0;
-    for (int j = 0; j < templ->height; j += 4)
+    for (int j = 0; j < templ->height; j+=4)
     {
-        for (int i = 0; i < templ->width; i += 4)
+        for (int i = 0; i < templ->width; i+=4)
         {
             int pt = 3 * ((y + j) * src->width + (x + i));
             int pt2 = 3 * (j * templ->width + i);
