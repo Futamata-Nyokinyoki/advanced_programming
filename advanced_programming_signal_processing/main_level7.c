@@ -114,9 +114,9 @@ int templateMatchingColorLevel2(Image *src, Image *templ, Point *position, doubl
 int isMatchColorLevel2(Image *src, Image *templ, int x, int y)
 {
     int color_flag = 0;
-    for (int j = 0; j < templ->height; j+=4)
+    for (int j = 0; j < templ->height; j += 4)
     {
-        for (int i = 0; i < templ->width; i+=4)
+        for (int i = 0; i < templ->width; i += 4)
         {
             int pt = 3 * ((y + j) * src->width + (x + i));
             int pt2 = 3 * (j * templ->width + i);
@@ -235,13 +235,13 @@ int templateMatchingColorLevel4(Image *src, Image *templ, Point *position, doubl
         return;
     }
 
-    int min_distance = INT_MAX;
+    int min_distance = INT_MAX >> 8;
 
     for (int y = 0; y < src->height - templ->height; y++)
     {
         for (int x = 0; x < src->width - templ->width; x++)
         {
-            int distance = calculateSSDColorLevel4(src, templ, x, y);
+            int distance = calculateSSDColorLevel4(src, templ, x, y, min_distance);
             if (distance < min_distance)
             {
                 min_distance = distance;
@@ -255,10 +255,9 @@ int templateMatchingColorLevel4(Image *src, Image *templ, Point *position, doubl
     return 1;
 }
 
-int calculateSSDColorLevel4(Image *src, Image *templ, int x, int y)
+int calculateSSDColorLevel4(Image *src, Image *templ, int x, int y, int threshold)
 {
     int distance = 0;
-    int THRESHOLD = templ->width * templ->height * 180;
 
     for (int j = 0; j < templ->height; j += 4)
     {
@@ -287,7 +286,7 @@ int calculateSSDColorLevel4(Image *src, Image *templ, int x, int y)
 
             distance += r * r + g * g + b * b;
 
-            if (distance > THRESHOLD)
+            if (distance > threshold)
             {
                 return INT_MAX;
             }
