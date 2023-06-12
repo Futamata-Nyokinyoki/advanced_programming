@@ -64,13 +64,13 @@ void templateMatchingColor(Image *src, Image *templ, Point *position, double *di
         return;
     }
 
-    int min_distance = INT_MAX;
+    int min_distance = INT_MAX >> 8;
 
     for (int y = 0; y < src->height - templ->height; y++)
     {
         for (int x = 0; x < src->width - templ->width; x++)
         {
-            int distance = calculateSSDColor(src, templ, x, y);
+            int distance = calculateSSDColor(src, templ, x, y, min_distance);
             if (distance < min_distance)
             {
                 min_distance = distance;
@@ -84,10 +84,9 @@ void templateMatchingColor(Image *src, Image *templ, Point *position, double *di
     return;
 }
 
-int calculateSSDColor(Image *src, Image *templ, int x, int y)
+int calculateSSDColor(Image *src, Image *templ, int x, int y, int threshold)
 {
     int distance = 0;
-    int THRESHOLD = templ->width * templ->height * 180;
 
     for (int j = 0; j < templ->height; j++)
     {
@@ -114,7 +113,7 @@ int calculateSSDColor(Image *src, Image *templ, int x, int y)
 
             distance += r * r + g * g + b * b;
 
-            if (distance > THRESHOLD)
+            if (distance > threshold)
             {
                 return INT_MAX;
             }
