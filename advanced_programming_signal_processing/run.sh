@@ -63,10 +63,10 @@ process_image() {
 	echo `basename ${template}`
 	if [ $x = 0 ]
 	then
-	    ./matching_${level} $name "${template}" $rotation $threshold cwp  # call the matching program corresponding to the level
-	    x=1
+        ./matching_${level} $name "${template}" $rotation $threshold cwp  # call the matching program corresponding to the level
+        x=1
 	else
-	    ./matching_${level} $name "${template}" $rotation $threshold wp  # call the matching program corresponding to the level
+        ./matching_${level} $name "${template}" $rotation $threshold wp  # call the matching program corresponding to the level
 	fi
     done
     echo ""

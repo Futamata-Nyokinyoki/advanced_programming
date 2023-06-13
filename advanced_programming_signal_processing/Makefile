@@ -1,6 +1,5 @@
 SHELL = /bin/bash
-matching: level1 level2 level3 level4 level5 level6
-.PHONY: level1 clean
+matching: level1 level2 level3 level4 level5 level6 level7
 
 level1: main_level1.cu imageUtil.cu
 	nvcc -w -O3 -o matching_level1 main_level1.cu imageUtil.cu -lm
@@ -19,6 +18,9 @@ level5: main_level5.c imageUtil.c
 
 level6 : main_level6.c imageUtil.c
 	gcc -w -O3 -o matching_level6 main_level6.c imageUtil.c -lm -mtune=native
+
+level7: main_level7.c imageUtil.c
+	gcc -w -O3 -o matching_level7 main_level7.c imageUtil.c -lm -mtune=native
 
 clean:
 	$(RM) matching

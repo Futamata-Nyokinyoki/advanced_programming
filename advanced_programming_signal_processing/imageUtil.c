@@ -77,6 +77,27 @@ Image *readPXM(const char *name)
   dest->data = (unsigned char *)malloc(sizeof(unsigned char) * size);
   fread(dest->data, sizeof(unsigned char), size, fp);
 
+  for (;;)
+  {
+    if (fgetc(fp) == '#')
+    {
+      fgets(buffer, 256, fp); // skip comment
+      continue;
+    }
+    else
+    {
+      fseek(fp, -1, SEEK_CUR);
+      fscanf(fp, "%d %d", &dest->width, &dest->height);
+      break;
+    }
+  }
+  fscanf(fp, "%s\n", buffer); // skip intensity
+  // printImageInfo(dest);
+
+  int size = dest->width * dest->height * dest->channel;
+  dest->data = (unsigned char *)malloc(sizeof(unsigned char) * size);
+  fread(dest->data, sizeof(unsigned char), size, fp);
+
   fclose(fp);
   return dest;
 }
@@ -253,10 +274,9 @@ char *getBaseName(const char *name)
       count++;
   }
 
-  for (i = 0; i < count; i++)
-  {
-    ret = strchr(ret, '/');
-  }
+  char *ppt;
+  if ((ppt = strchr(ret, '.')) != NULL)
+    *ppt = '\0';
 
   char *ppt;
   if ((ppt = strchr(ret, '.')) != NULL)
@@ -274,6 +294,16 @@ void writeResult(const char *file_name, const char *template_name, const Point r
     return;
   }
   fprintf(fp, "%s %d %d %d %d %d %f\n", template_name, result.x, result.y, width, height, rotation, distance);
+  fclose(fp);
+}
+
+void clearResult(const char *file_name)
+{
+  FILE *fp = fopen(file_name, "w");
+  if (fp == NULL)
+  {
+    return;
+  }
   fclose(fp);
 }
 
